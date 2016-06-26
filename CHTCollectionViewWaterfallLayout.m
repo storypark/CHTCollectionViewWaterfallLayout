@@ -39,9 +39,9 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
 }
 
 #pragma mark - Public Accessors
-- (void)setColumnCount:(NSInteger)columnCount {
-  if (_columnCount != columnCount) {
-    _columnCount = columnCount;
+- (void)setColumnWidth:(CGFloat)columnWidth {
+  if (_columnWidth != columnWidth) {
+    _columnWidth = columnWidth;
     [self invalidateLayout];
   }
 }
@@ -102,32 +102,6 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
   }
 }
 
-- (NSInteger)columnCountForSection:(NSInteger)section {
-  if ([self.delegate respondsToSelector:@selector(collectionView:layout:columnCountForSection:)]) {
-    return [self.delegate collectionView:self.collectionView layout:self columnCountForSection:section];
-  } else {
-    return self.columnCount;
-  }
-}
-
-- (CGFloat)itemWidthInSectionAtIndex:(NSInteger)section {
-  UIEdgeInsets sectionInset;
-  if ([self.delegate respondsToSelector:@selector(collectionView:layout:insetForSectionAtIndex:)]) {
-    sectionInset = [self.delegate collectionView:self.collectionView layout:self insetForSectionAtIndex:section];
-  } else {
-    sectionInset = self.sectionInset;
-  }
-  CGFloat width = self.collectionView.bounds.size.width - sectionInset.left - sectionInset.right;
-  NSInteger columnCount = [self columnCountForSection:section];
-
-  CGFloat columnSpacing = self.minimumColumnSpacing;
-  if ([self.delegate respondsToSelector:@selector(collectionView:layout:minimumColumnSpacingForSectionAtIndex:)]) {
-    columnSpacing = [self.delegate collectionView:self.collectionView layout:self minimumColumnSpacingForSectionAtIndex:section];
-  }
-
-  return CHTFloorCGFloat((width - (columnCount - 1) * columnSpacing) / columnCount);
-}
-
 #pragma mark - Private Accessors
 - (NSMutableDictionary *)headersAttribute {
   if (!_headersAttribute) {
@@ -177,7 +151,7 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
 
 #pragma mark - Init
 - (void)commonInit {
-  _columnCount = 2;
+  _columnWidth = 300;
   _minimumColumnSpacing = 10;
   _minimumInteritemSpacing = 10;
   _headerHeight = 0;
@@ -219,13 +193,14 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
   }
 
   NSAssert([self.delegate conformsToProtocol:@protocol(CHTCollectionViewDelegateWaterfallLayout)], @"UICollectionView's delegate should conform to CHTCollectionViewDelegateWaterfallLayout protocol");
-  NSAssert(self.columnCount > 0 || [self.delegate respondsToSelector:@selector(collectionView:layout:columnCountForSection:)], @"UICollectionViewWaterfallLayout's columnCount should be greater than 0, or delegate must implement columnCountForSection:");
-
+  
+  // How many columns can we succesfully fill
+  NSInteger const columnCount = self.columnCount;
+  
   // Initialize variables
   NSInteger idx = 0;
 
   for (NSInteger section = 0; section < numberOfSections; section++) {
-    NSInteger columnCount = [self columnCountForSection:section];
     NSMutableArray *sectionColumnHeights = [NSMutableArray arrayWithCapacity:columnCount];
     for (idx = 0; idx < columnCount; idx++) {
       [sectionColumnHeights addObject:@(0)];
@@ -258,11 +233,12 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
     } else {
       sectionInset = self.sectionInset;
     }
-
-    CGFloat width = self.collectionView.bounds.size.width - sectionInset.left - sectionInset.right;
-    NSInteger columnCount = [self columnCountForSection:section];
-    CGFloat itemWidth = CHTFloorCGFloat((width - (columnCount - 1) * columnSpacing) / columnCount);
-
+      
+    NSInteger horizontalCenterAdjustment = (self.collectionView.bounds.size.width
+                                            - (sectionInset.left + sectionInset.right)
+                                            - (_columnWidth * columnCount)
+                                            - (_minimumColumnSpacing * (columnCount - 1))) / 2.0;
+      
     /*
      * 2. Section header
      */
@@ -309,17 +285,13 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
     // Item will be put into shortest column.
     for (idx = 0; idx < itemCount; idx++) {
       NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:section];
-      NSUInteger columnIndex = [self nextColumnIndexForItem:idx inSection:section];
-      CGFloat xOffset = sectionInset.left + (itemWidth + columnSpacing) * columnIndex;
-      CGFloat yOffset = [self.columnHeights[section][columnIndex] floatValue];
       CGSize itemSize = [self.delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:indexPath];
-      CGFloat itemHeight = 0;
-      if (itemSize.height > 0 && itemSize.width > 0) {
-        itemHeight = CHTFloorCGFloat(itemSize.height * itemWidth / itemSize.width);
-      }
+      NSUInteger columnIndex = [self nextColumnIndexForItem:idx inSection:section columnCount:columnCount];
+      CGFloat xOffset = sectionInset.left + horizontalCenterAdjustment + (itemSize.width + columnSpacing) * columnIndex;
+      CGFloat yOffset = [self.columnHeights[section][columnIndex] floatValue];
 
       attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
-      attributes.frame = CGRectMake(xOffset, yOffset, itemWidth, itemHeight);
+      attributes.frame = (CGRect){xOffset, yOffset, itemSize};
       [itemAttributes addObject:attributes];
       [self.allItemAttributes addObject:attributes];
       self.columnHeights[section][columnIndex] = @(CGRectGetMaxY(attributes.frame) + minimumInteritemSpacing);
@@ -457,6 +429,15 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
 
 #pragma mark - Private Methods
 
+- (NSInteger)columnCount {
+  // Work out how many columns can fit into availableWidth with the column spacing and section inset
+  CGFloat const availableWidth = self.collectionView.bounds.size.width - self.sectionInset.left - self.sectionInset.right;
+  CGFloat unadjustedColumnCount = (availableWidth / _columnWidth);
+  CGFloat columnWidthAvailable = ((unadjustedColumnCount - ((NSInteger) unadjustedColumnCount)) / unadjustedColumnCount) * availableWidth;
+  CGFloat columnWidthLessColumnSpacing = columnWidthAvailable - (_minimumColumnSpacing * ((NSInteger) unadjustedColumnCount - 1));
+  return unadjustedColumnCount - (round(columnWidthLessColumnSpacing) < 0 ? 1 : 0);
+}
+
 /**
  *  Find the shortest column.
  *
@@ -502,9 +483,8 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
  *
  *  @return index for the next column
  */
-- (NSUInteger)nextColumnIndexForItem:(NSInteger)item inSection:(NSInteger)section {
+- (NSUInteger)nextColumnIndexForItem:(NSInteger)item inSection:(NSInteger)section columnCount:(NSInteger) columnCount {
   NSUInteger index = 0;
-  NSInteger columnCount = [self columnCountForSection:section];
   switch (self.itemRenderDirection) {
     case CHTCollectionViewWaterfallLayoutItemRenderDirectionShortestFirst:
       index = [self shortestColumnIndexInSection:section];

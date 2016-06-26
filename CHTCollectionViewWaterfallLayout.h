@@ -56,21 +56,6 @@ extern NSString *const CHTCollectionElementKindSectionFooter;
 
 @optional
 /**
- *  Asks the delegate for the column count in a section
- *
- *  @param collectionView
- *    The collection view object displaying the waterfall layout.
- *  @param collectionViewLayout
- *    The layout object requesting the information.
- *  @param section
- *    The section.
- *
- *  @return
- *    The original column count for that section. Must be greater than 0.
- */
-- (NSInteger)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout columnCountForSection:(NSInteger)section;
-
-/**
  *  Asks the delegate for the height of the header view in the specified section.
  *
  *  @param collectionView
@@ -226,10 +211,10 @@ extern NSString *const CHTCollectionElementKindSectionFooter;
 @interface CHTCollectionViewWaterfallLayout : UICollectionViewLayout
 
 /**
- *  @brief How many columns for this layout.
- *  @discussion Default: 2
+ *  @brief The width a column must be
+ *  @discussion Default: 300.0
  */
-@property (nonatomic, assign) NSInteger columnCount;
+@property (nonatomic, assign) CGFloat columnWidth;
 
 /**
  *  @brief The minimum spacing to use between successive columns.
@@ -314,12 +299,5 @@ extern NSString *const CHTCollectionElementKindSectionFooter;
  *    Default: 0.f
  */
 @property (nonatomic, assign) CGFloat minimumContentHeight;
-
-/**
- *  @brief The calculated width of an item in the specified section.
- *  @discussion
- *    The width of an item is calculated based on number of columns, the collection view width, and the horizontal insets for that section.
- */
-- (CGFloat)itemWidthInSectionAtIndex:(NSInteger)section;
 
 @end
