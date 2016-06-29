@@ -102,6 +102,13 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
   }
 }
 
+- (void)setCellAlignment:(CHTCollectionViewWaterfallLayoutCellAlignment)cellAlignment {
+  if (_cellAlignment != cellAlignment) {
+    _cellAlignment = cellAlignment;
+    [self invalidateLayout];
+  }
+}
+
 #pragma mark - Private Accessors
 - (NSMutableDictionary *)headersAttribute {
   if (!_headersAttribute) {
@@ -233,9 +240,10 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
     } else {
       sectionInset = self.sectionInset;
     }
-      
-    NSInteger horizontalCenterAdjustment = (self.collectionView.bounds.size.width
-                                            - (sectionInset.left + sectionInset.right)
+    
+    CGFloat contentWidth = self.collectionView.bounds.size.width - (sectionInset.left + sectionInset.right);
+    
+    NSInteger horizontalCenterAdjustment = (contentWidth
                                             - (_columnWidth * columnCount)
                                             - (_minimumColumnSpacing * (columnCount - 1))) / 2.0;
       
@@ -296,16 +304,27 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
       
       CGFloat xOffset;
       CGFloat yOffset;
+      CGFloat columnWidthDifference;
       NSUInteger columnIndex;
       if (fullSpan) {
         columnIndex = [self longestColumnIndexInSection:section];
         xOffset = sectionInset.left + horizontalCenterAdjustment;
         yOffset = [self.columnHeights[section][columnIndex] floatValue];
-        
+        columnWidthDifference = (contentWidth - (horizontalCenterAdjustment * 2)) - itemSize.width;
       } else {
         columnIndex = [self nextColumnIndexForItem:idx inSection:section columnCount:columnCount];
         xOffset = sectionInset.left + horizontalCenterAdjustment + (_columnWidth + columnSpacing) * columnIndex;
         yOffset = [self.columnHeights[section][columnIndex] floatValue];
+        columnWidthDifference = _columnWidth - itemSize.width;
+      }
+
+      if (columnWidthDifference != 0.0) {
+        // TODO: There is an argument for having the behaviour be per cell and having delegate decide
+        if (_cellAlignment == CHTCollectionViewWaterfallLayoutCellAlignmentCenter) {
+          xOffset += columnWidthDifference / 2.0;
+        } else if (_cellAlignment == CHTCollectionViewWaterfallLayoutCellAlignmentRight) {
+          xOffset += columnWidthDifference;
+        }
       }
       
       attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];

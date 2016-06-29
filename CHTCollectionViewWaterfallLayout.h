@@ -17,6 +17,15 @@ typedef NS_ENUM (NSUInteger, CHTCollectionViewWaterfallLayoutItemRenderDirection
 };
 
 /**
+ *  Enumerated structure to define what the behaviour is when an item's size is not exactly columnWidth.
+ */
+typedef NS_ENUM (NSUInteger, CHTCollectionViewWaterfallLayoutCellAlignment) {
+    CHTCollectionViewWaterfallLayoutCellAlignmentLeft,
+    CHTCollectionViewWaterfallLayoutCellAlignmentRight,
+    CHTCollectionViewWaterfallLayoutCellAlignmentCenter
+};
+
+/**
  *  Constants that specify the types of supplementary views that can be presented using a waterfall layout.
  */
 
@@ -308,6 +317,13 @@ extern NSString *const CHTCollectionElementKindSectionFooter;
  *    Default: CHTCollectionViewWaterfallLayoutItemRenderDirectionShortestFirst
  */
 @property (nonatomic, assign) CHTCollectionViewWaterfallLayoutItemRenderDirection itemRenderDirection;
+
+/**
+ *  @brief The behaviour of the layout when an item's size is not exactly columnWidth.
+ *  @discussion
+ *    Default: CHTCollectionViewWaterfallLayoutCellAlignmentLeft
+ */
+@property (nonatomic, assign) CHTCollectionViewWaterfallLayoutCellAlignment cellAlignment;
 
 /**
  *  @brief The minimum height of the collection view's content.
