@@ -56,6 +56,24 @@ extern NSString *const CHTCollectionElementKindSectionFooter;
 
 @optional
 /**
+ *  Asks the delegate if the item's cell should span across all columns.
+ *
+ *  @param collectionView
+ *    The collection view object displaying the waterfall layout.
+ *  @param collectionViewLayout
+ *    The layout object requesting the information.
+ *  @param indexPath
+ *    The index path of the item.
+ *
+ *  @return
+ *    YES if the cell should span the full width of the layout, otherwise NO.
+ *
+ *  @discussion
+ *    If you do not implement this method, the waterfall layout will default to NO.
+ */
+- (BOOL)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout fullSpanForItemAtIndexPath:(NSIndexPath *)indexPath;
+
+/**
  *  Asks the delegate for the height of the header view in the specified section.
  *
  *  @param collectionView

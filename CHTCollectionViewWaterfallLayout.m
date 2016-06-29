@@ -282,19 +282,45 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
     NSInteger itemCount = [self.collectionView numberOfItemsInSection:section];
     NSMutableArray *itemAttributes = [NSMutableArray arrayWithCapacity:itemCount];
 
-    // Item will be put into shortest column.
+    // Item will be put into shortest column if it is normal span. Or, it will clear the previous columns and be put at the longest column if full span
     for (idx = 0; idx < itemCount; idx++) {
       NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:section];
+      
+      BOOL fullSpan;
+      if ([self.delegate respondsToSelector:@selector(collectionView:layout:fullSpanForItemAtIndexPath:)]) {
+        fullSpan = [self.delegate collectionView:self.collectionView layout:self fullSpanForItemAtIndexPath:indexPath];
+      } else {
+        fullSpan = NO;
+      }
       CGSize itemSize = [self.delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:indexPath];
-      NSUInteger columnIndex = [self nextColumnIndexForItem:idx inSection:section columnCount:columnCount];
-      CGFloat xOffset = sectionInset.left + horizontalCenterAdjustment + (_columnWidth + columnSpacing) * columnIndex;
-      CGFloat yOffset = [self.columnHeights[section][columnIndex] floatValue];
-
+      
+      CGFloat xOffset;
+      CGFloat yOffset;
+      NSUInteger columnIndex;
+      if (fullSpan) {
+        columnIndex = [self longestColumnIndexInSection:section];
+        xOffset = sectionInset.left + horizontalCenterAdjustment;
+        yOffset = [self.columnHeights[section][columnIndex] floatValue];
+        
+      } else {
+        columnIndex = [self nextColumnIndexForItem:idx inSection:section columnCount:columnCount];
+        xOffset = sectionInset.left + horizontalCenterAdjustment + (_columnWidth + columnSpacing) * columnIndex;
+        yOffset = [self.columnHeights[section][columnIndex] floatValue];
+      }
+      
       attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
       attributes.frame = (CGRect){xOffset, yOffset, itemSize};
       [itemAttributes addObject:attributes];
       [self.allItemAttributes addObject:attributes];
-      self.columnHeights[section][columnIndex] = @(CGRectGetMaxY(attributes.frame) + minimumInteritemSpacing);
+      
+      NSNumber *columnHeight = @(CGRectGetMaxY(attributes.frame) + minimumInteritemSpacing);
+      if (fullSpan) {
+        for (idx = 0; idx < columnCount; idx++) {
+          self.columnHeights[section][idx] = columnHeight;
+        }
+      } else {
+        self.columnHeights[section][columnIndex] = columnHeight;
+      }
     }
 
     [self.sectionItemAttributes addObject:itemAttributes];
