@@ -287,7 +287,7 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
       NSIndexPath *indexPath = [NSIndexPath indexPathForItem:idx inSection:section];
       CGSize itemSize = [self.delegate collectionView:self.collectionView layout:self sizeForItemAtIndexPath:indexPath];
       NSUInteger columnIndex = [self nextColumnIndexForItem:idx inSection:section columnCount:columnCount];
-      CGFloat xOffset = sectionInset.left + horizontalCenterAdjustment + (itemSize.width + columnSpacing) * columnIndex;
+      CGFloat xOffset = sectionInset.left + horizontalCenterAdjustment + (_columnWidth + columnSpacing) * columnIndex;
       CGFloat yOffset = [self.columnHeights[section][columnIndex] floatValue];
 
       attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:indexPath];
