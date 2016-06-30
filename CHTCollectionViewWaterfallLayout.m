@@ -334,8 +334,8 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
       
       NSNumber *columnHeight = @(CGRectGetMaxY(attributes.frame) + minimumInteritemSpacing);
       if (fullSpan) {
-        for (idx = 0; idx < columnCount; idx++) {
-          self.columnHeights[section][idx] = columnHeight;
+        for (int col = 0; col < columnCount; col++) {
+          self.columnHeights[section][col] = columnHeight;
         }
       } else {
         self.columnHeights[section][columnIndex] = columnHeight;
