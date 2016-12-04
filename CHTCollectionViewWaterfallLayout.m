@@ -202,7 +202,7 @@ static CGFloat CHTFloorCGFloat(CGFloat value) {
   NSAssert([self.delegate conformsToProtocol:@protocol(CHTCollectionViewDelegateWaterfallLayout)], @"UICollectionView's delegate should conform to CHTCollectionViewDelegateWaterfallLayout protocol");
   
   // How many columns can we succesfully fill
-  NSInteger const columnCount = self.columnCount;
+  NSInteger const columnCount = MAX(self.columnCount, 1);
   
   // Initialize variables
   NSInteger idx = 0;
